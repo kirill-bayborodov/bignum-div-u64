@@ -1,11 +1,11 @@
-# bignum-template
+# bignum-div-u64
 
-[![C/ASM CI](https://github.com/kirill-bayborodov/bignum-template/actions/workflows/ci.yml/badge.svg)](https://github.com/kirill-bayborodov/bignum-template/actions/workflows/ci.yml)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/kirill-bayborodov/bignum-template?label=release)](https://github.com/kirill-bayborodov/bignum-template/releases/latest)
+[![C/ASM CI](https://github.com/kirill-bayborodov/bignum-div-u64/actions/workflows/ci.yml/badge.svg)](https://github.com/kirill-bayborodov/bignum-div-u64/actions/workflows/ci.yml)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/kirill-bayborodov/bignum-div-u64?label=release)](https://github.com/kirill-bayborodov/bignum-div-u64/releases/latest)
 
 
 
-`bignum-template` is a high-performance, standalone module for performing a logical template on an arbitrary-precision integer (`bignum_t`).
+`bignum-div-u64` is a high-performance, standalone module for performing a logical template on an arbitrary-precision integer (`bignum_t`).
 A highly optimized x86-64 assembly implementation of a bignum template operation, designed for performance-critical applications. 
 
 ## Distribution
@@ -29,18 +29,20 @@ Also available as a standalone distribution.
 
 To clone the repository with its submodule, use:
 ```bash
-git clone --recurse-submodules https://github.com/kirill-bayborodov/bignum-template.git
+git clone --recurse-submodules https://github.com/kirill-bayborodov/bignum-div-u64.git
 ```
 ## API
 
-The library provides a single function, declared in `include/bignum_template.h`.
+The library provides a single function, declared in `include/bignum_div_u64.h`.
 
 ```c
-bignum_status_t bignum_template(bignum_t* num, size_t template );
+bignum_div_u64_status_t bignum_div_u64(bignum_t *q, const bignum_t *n, const uint64_t d, uint64_t *rem);
 ```
--   **`num`**: A pointer to the `bignum_t` structure to be shifted.
--   **`template`**: The number of bits to template.
--   **Returns**: A `bignum_status_t` enum (`BIGNUM_SUCCESS`, `BIGNUM_ERROR_NULL_ARG`, `BIGNUM_ERROR_OVERFLOW`).
+-   **`q`**: Pointer to a bignum_t structure for storing the quotient.
+-   **`n`**: Pointer to a bignum_t representing the dividend.
+-   **`d`**: 64‑bit divisor.
+-   **`rem`**: Pointer to a uint64_t for storing the remainder.
+-   **Returns**: A `bignum_div_u64_status_t` enum (`BIGNUM_DIV_U64_OK`, `BIGNUM_DIV_U64_ERR_NULL_PTR`, `BIGNUM_DIV_U64_ERR_DIVISION_BY_ZERO`, `BIGNUM_DIV_U64_ERR_BUFFER_OVERLAP`, `BIGNUM_DIV_U64_ERR_BAD_LENGTH `).
 
 ## How to Build, Test, Install and Use
 
@@ -91,24 +93,24 @@ make clean
 
 ## How to Use
 
-This project produces an object file (`bignum_template.o`) which you can link with your own application.
+This project produces an object file (`bignum_div_u64.o`) which you can link with your own application.
 
 **1. Clone the repository with submodules:**
 ```bash
-git clone --recurse-submodules https://github.com/kirill-bayborodov/bignum-template.git
-cd bignum-template
+git clone --recurse-submodules https://github.com/kirill-bayborodov/bignum-div-u64.git
+cd bignum-div-u64
 ```
 
 **2. Build the object file:**
 ```bash
 make build
 ```
-The output will be located at `build/bignum_template.o`.
+The output will be located at `build/bignum_div_u64.o`.
 
 **3. Link with your application:**
 When compiling your project, include the object file and specify the include paths for the headers.
 ```bash
-gcc your_app.c build/bignum_template.o -I./include -I./libs/common/include -o your_app -no-pie
+gcc your_app.c build/bignum_div_u64.o -I./include -I./libs/common/include -o your_app -no-pie
 ```	
 
 ## Contributing

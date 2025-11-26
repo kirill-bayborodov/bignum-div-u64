@@ -150,8 +150,11 @@ dist: clean
 	@echo '#include "$(LIB_NAME).h"' > dist/test_dist.c; 
 	@echo '#include <assert.h>' >> dist/test_dist.c; 
 	@echo 'int main() {' >> dist/test_dist.c; 
-	@echo '    bignum_t num = {0};' >> dist/test_dist.c; 
-	@echo '    $(LIB_NAME)(&num, 5);' >> dist/test_dist.c; 
+	@echo '    bignum_t q_dst = {0};' >> dist/test_dist.c; 
+	@echo '    bignum_t n_dst = {10};' >> dist/test_dist.c; 
+	@echo '    uint64_t d_u64_dst = {2};' >> dist/test_dist.c; 
+	@echo '    uint64_t rem_u64_dst = {0};' >> dist/test_dist.c; 	
+	@echo '    $(LIB_NAME)(&q_dst, &n_dst,  d_u64_dst, &rem_u64_dst);' >> dist/test_dist.c; 
 	@echo '    assert(1);' >> dist/test_dist.c; 
 	@echo '    return 0;' >> dist/test_dist.c; 
 	@echo '}' >> dist/test_dist.c
