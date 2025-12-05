@@ -25,7 +25,7 @@ Also available as a standalone distribution.
 ## Dependencies
 
 -   **Build-time:** `make`, `gcc`, `yasm`, `cppcheck`.
--   **Component:** This project requires `bignum-common` as a git submodule located at `libs/common`.
+-   **Component:** This project requires `bignum-common` as a git submodule located at `libs/bignum-common`.
 
 To clone the repository with its submodule, use:
 ```bash
@@ -110,7 +110,7 @@ The output will be located at `build/bignum_div_u64.o`.
 **3. Link with your application:**
 When compiling your project, include the object file and specify the include paths for the headers.
 ```bash
-gcc your_app.c build/bignum_div_u64.o -I./include -I./libs/common/include -o your_app -no-pie
+gcc your_app.c build/bignum_div_u64.o -I./include -I./libs/bignum-common/include -o your_app -no-pie
 ```	
 
 ## Contributing
