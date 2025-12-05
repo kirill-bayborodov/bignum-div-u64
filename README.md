@@ -5,8 +5,8 @@
 
 
 
-`bignum-div-u64` is a high-performance, standalone module for performing a logical template on an arbitrary-precision integer (`bignum_t`).
-A highly optimized x86-64 assembly implementation of a bignum template operation, designed for performance-critical applications. 
+`bignum-div-u64` is a high-performance, standalone module for performing a logical division by uint64 on an arbitrary-precision integer (`bignum_t`).
+A highly optimized x86-64 assembly implementation of a bignum division operation, designed for performance-critical applications. 
 
 ## Distribution
 
