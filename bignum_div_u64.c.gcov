@@ -1,0 +1,70 @@
+        -:    0:Source:src/bignum_div_u64.c
+        -:    0:Graph:build/bignum_div_u64.gcno
+        -:    0:Data:build/bignum_div_u64.gcda
+        -:    0:Runs:5
+        -:    1:#include "bignum_div_u64.h"
+        -:    2:#include <string.h>
+        -:    3:
+        -:    4:static int overlaps(const void *a, const void *b, size_t size)
+        -:    5:{
+        -:    6:    const unsigned char *pa = a, *pb = b;
+       24:    7:    return pa < pb + size && pb < pa + size;
+branch  0 taken 17 (fallthrough)
+branch  1 taken 7
+branch  2 taken 14 (fallthrough)
+branch  3 taken 3
+        -:    8:}
+        -:    9:
+function bignum_div_u64 called 33 returned 100% blocks executed 100%
+       33:   10:bignum_div_u64_status_t bignum_div_u64(bignum_t *q, const bignum_t *n, uint64_t d, uint64_t *rem)
+        -:   11:{
+       33:   12:    bignum_t tmp = {0};
+        -:   13:    uint64_t remainder = 0U;
+       33:   14:    if (q == NULL || n == NULL || rem == NULL) return BIGNUM_DIV_U64_ERR_NULL_PTR;
+branch  0 taken 29 (fallthrough)
+branch  1 taken 4
+branch  2 taken 27 (fallthrough)
+branch  3 taken 2
+       27:   15:    if (d == 0U) return BIGNUM_DIV_U64_ERR_DIVISION_BY_ZERO;
+branch  0 taken 25 (fallthrough)
+branch  1 taken 2
+       25:   16:    if (n->len > BIGNUM_CAPACITY) return BIGNUM_DIV_U64_ERR_BAD_LENGTH;
+branch  0 taken 24 (fallthrough)
+branch  1 taken 1
+        -:   17:    if (overlaps(q, n, sizeof(*q))) return BIGNUM_DIV_U64_ERR_BUFFER_OVERLAP;
+       66:   18:    for (size_t i = n->len; i > 0U; --i) {
+branch  0 taken 45
+branch  1 taken 21 (fallthrough)
+       45:   19:        __uint128_t value = ((__uint128_t)remainder << 64U) | n->words[i - 1U];
+       45:   20:        tmp.words[i - 1U] = (uint64_t)(value / d);
+       45:   21:        remainder = (uint64_t)(value % d);
+        -:   22:    }
+        -:   23:    tmp.len = n->len;
+       37:   24:    while (tmp.len > 0U && tmp.words[tmp.len - 1U] == 0U) --tmp.len;
+branch  0 taken 36 (fallthrough)
+branch  1 taken 1
+branch  2 taken 16
+branch  3 taken 20 (fallthrough)
+       21:   25:    *q = tmp;
+       21:   26:    *rem = remainder;
+       21:   27:    return BIGNUM_DIV_U64_OK;
+        -:   28:}
+        -:   29:
+function bignum_div_status_to_string called 0 returned 0% blocks executed 0%
+    #####:   30:const char *bignum_div_status_to_string(bignum_div_u64_status_t status)
+        -:   31:{
+    #####:   32:    switch (status) {
+branch  0 never executed
+branch  1 never executed
+branch  2 never executed
+branch  3 never executed
+branch  4 never executed
+branch  5 never executed
+        -:   33:    case BIGNUM_DIV_U64_OK: return "ok";
+    #####:   34:    case BIGNUM_DIV_U64_ERR_NULL_PTR: return "null pointer";
+    #####:   35:    case BIGNUM_DIV_U64_ERR_DIVISION_BY_ZERO: return "division by zero";
+    #####:   36:    case BIGNUM_DIV_U64_ERR_BUFFER_OVERLAP: return "buffer overlap";
+    #####:   37:    case BIGNUM_DIV_U64_ERR_BAD_LENGTH: return "bad length";
+    #####:   38:    default: return "unknown";
+        -:   39:    }
+        -:   40:}

@@ -1,130 +1,91 @@
 # bignum-div-u64
 
-[![C/ASM CI](https://github.com/kirill-bayborodov/bignum-div-u64/actions/workflows/ci.yml/badge.svg)](https://github.com/kirill-bayborodov/bignum-div-u64/actions/workflows/ci.yml)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/kirill-bayborodov/bignum-div-u64?label=release)](https://github.com/kirill-bayborodov/bignum-div-u64/releases/latest)
+## Overview
 
-
-
-`bignum-div-u64` is a high-performance, standalone module for performing a logical division by uint64 on an arbitrary-precision integer (`bignum_t`).
-A highly optimized x86-64 assembly implementation of a bignum division operation, designed for performance-critical applications. 
-
-## Distribution
-
-Part of the `bignum-lib` project: https://github.com/kirill-bayborodov/bignum-lib  
-Also available as a standalone distribution.
+Divides a fixed-capacity unsigned big integer by uint64_t. The module uses the little-endian `bignum_t` representation supplied by `bignum-core`. It exposes a deterministic C11 reference implementation and the repository's x86-64 System V YASM implementation where available.
 
 ## Features
 
--   **High Performance:** Hand-crafted x86-64 yasm assembly — an ultra-optimized, multithreading-ready engine delivering peak execution speed..
--   **Dependency-Free Core:** The core logic has no external runtime dependencies.
--   **Tests and Benchmarks:** Provides a comprehensive test suite and performance microbenchmarks.
--   **Automated Builds:** A comprehensive `Makefile` for easy compilation, testing, and benchmarking.
--   **Continuous Integration:** All changes are automatically built and tested via GitHub Actions.
--   **Static Analysis:** Code quality is enforced using `cppcheck` for all C-based test files.
+The API has one operation-specific public entry point, explicit named status codes, fixed-capacity storage, caller-owned inputs and caller-allocated outputs. Successful calls publish a complete result. Failure paths are transactional unless the public header explicitly defines an in-place operation.
+
+## Representation and Contract
+
+`bignum_t` stores `BIGNUM_CAPACITY` little-endian 64-bit words and a logical `len`. Inputs are borrowed and remain owned by the caller. The library does not allocate or free caller storage. Pointers must remain valid for the duration of the call. Each status code in the public header defines whether outputs remain unchanged, are zeroed, or contain a published result.
+
+## API
+
+The primary operation is:
+
+```c
+#include "bignum_div_u64.h"
+bignum_div_u64(/* see the public header for the exact typed parameters */);
+```
+
+The public header is authoritative for parameter direction, aliasing, overflow, normalization, and status semantics. No undocumented global state is used; independent calls are thread-safe when their objects do not overlap.
 
 ## Dependencies
 
--   **Build-time:** `make`, `gcc`, `yasm`, `cppcheck`.
--   **Component:** This project requires `bignum-common` as a git submodule located at `libs/bignum-common`.
+The module depends on the following local components:
 
-To clone the repository with its submodule, use:
-```bash
-git clone --recurse-submodules https://github.com/kirill-bayborodov/bignum-div-u64.git
-```
-## API
+| Component | Role |
+|---|---|
+| `bignum-core` | `bignum_t` representation and capacity definition |
+| `bignum-init` / `bignum-init-u64` | Canonical test and example initialization |
+| `bignum-init-from-array` | Deterministic vector construction |
+| `bignum-normalize` | Canonical logical length handling |
+| `bignum-cmp` | Comparison oracle where required |
+| `benchmark-framework` | Standard and full benchmark matrix execution |
 
-The library provides a single function, declared in `include/bignum_div_u64.h`.
+The former `bignum-common` dependency is intentionally not used.
 
-```c
-bignum_div_u64_status_t bignum_div_u64(bignum_t *q, const bignum_t *n, const uint64_t d, uint64_t *rem);
-```
--   **`q`**: Pointer to a bignum_t structure for storing the quotient.
--   **`n`**: Pointer to a bignum_t representing the dividend.
--   **`d`**: 64‑bit divisor.
--   **`rem`**: Pointer to a uint64_t for storing the remainder.
--   **Returns**: A `bignum_div_u64_status_t` enum (`BIGNUM_DIV_U64_OK`, `BIGNUM_DIV_U64_ERR_NULL_PTR`, `BIGNUM_DIV_U64_ERR_DIVISION_BY_ZERO`, `BIGNUM_DIV_U64_ERR_BUFFER_OVERLAP`, `BIGNUM_DIV_U64_ERR_BAD_LENGTH `).
+## Build
 
-## How to Build, Test, Install and Use
+The Makefile is adopted from the `bignum-bit-test` template and is frozen after adoption. Build the release targets with:
 
-The project uses a `Makefile` to manage all tasks.
-
-### Build the code
-Builds the assembly object file.
-```bash
-make build CONFIG=release
+```sh
+make build CONFIG=release USE_ASM=no
+make test CONFIG=release USE_ASM=no
 ```
 
-### Run Unit Tests
-Compiles and runs fast, essential correctness tests.
-```bash
-make test CONFIG=release
+Use `USE_ASM=yes` to build the assembly implementation. The Makefile discovers local submodules and links their distributions without repository-specific edits.
+
+## Tests and Coverage
+
+The test suite includes deterministic vectors, boundary and overflow cases, aliasing/guard checks where applicable, randomized robustness checks, multithreaded execution, runner integration, and benchmark-adapter validation. C11 coverage is measured in a separate instrumented build so the frozen Makefile remains unchanged:
+
+```sh
+make test CONFIG=release USE_ASM=no CC='gcc --coverage' LDFLAGS='--coverage -no-pie -lm'
+gcov -b -c build/bignum_div_u64.gcda
 ```
 
-### Run Static Analysis
-Checks all C source files (`tests/`, `benchmarks/` and `dist/`) for potential bugs and style issues.
-```bash
-make lint
+Coverage acceptance is greater than 90% for the operation source; uncovered defensive branches must be explained in the review record.
+
+## Benchmarks
+
+The benchmark adapter supplies deterministic operands, validates profile fields, executes the operation callback, and publishes a checksum after completion. The standard matrix can be run as follows:
+
+```sh
+make bench_matrix CONFIG=release USE_ASM=no \
+  BENCH_MATRIX_PROFILE=benchmarks/profiles/bignum_div_u64_standard.json \
+  BENCH_MATRIX_REPETITIONS=1 BENCH_MATRIX_ITERATIONS=20 \
+  BENCH_MATRIX_MT_TOTAL_ITERATIONS=40 BENCH_MATRIX_WARMUP=1 \
+  BENCH_MATRIX_DATA_COUNT=1 BENCH_MATRIX_TIMEOUT_SECONDS=30
 ```
 
-### Run Performance Benchmarks
-Compiles and runs performance tests using `perf`. The txt report is saved to `benchmarks/reports/check_*.txt`.
-```bash
-make bench CONFIG=debug
-```
+Run the same command with `USE_ASM=yes` for the assembly comparison. Reports are written under `benchmarks/reports/`; compare like-for-like profile and execution-mode keys only.
 
-### Build the distributive
-Builds the installation pack of files (with objects .o file) in dist direstory.
-```bash
-make install CONFIG=release
-```
+## C11 and Assembly Boundary
 
-### Build the distributive
-Builds the distributive pack of files (with single-header and static library .a file).
-```bash
-make dist CONFIG=release
-```
+The C11 implementation is the correctness reference. The YASM entry point follows the System V AMD64 ABI: integer and pointer arguments use the standard registers, callee-saved registers are preserved, the stack remains aligned at call boundaries, and the named status value is returned in `RAX`. The assembly implementation must preserve the same `bignum_t` memory layout and observable error behavior.
 
-## Clean Up
+## Error Handling and Security
 
-To remove all generated files (object files, executables, reports ):
-```bash
-make clean
-```
+Inputs are validated before publication of results. Capacity overflow, invalid lengths, null pointers, division by zero, and forbidden overlap are reported through named statuses defined by the header. No partial result is exposed on an error path. The implementation uses bounded fixed-size storage and does not perform unchecked dynamic allocation.
 
-## How to Use
+## Documentation Quality Gates
 
-This project produces an object file (`bignum_div_u64.o`) which you can link with your own application.
-
-**1. Clone the repository with submodules:**
-```bash
-git clone --recurse-submodules https://github.com/kirill-bayborodov/bignum-div-u64.git
-cd bignum-div-u64
-```
-
-**2. Build the object file:**
-```bash
-make build
-```
-The output will be located at `build/bignum_div_u64.o`.
-
-**3. Link with your application:**
-When compiling your project, include the object file and specify the include paths for the headers.
-```bash
-gcc your_app.c build/bignum_div_u64.o -I./include -I./libs/bignum-common/include -o your_app -no-pie
-```	
-
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-1.  Fork the repository.
-2.  Create a new branch (`git checkout -b feature/AmazingFeature`).
-3.  Make your changes.
-4.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-5.  Push to the branch (`git push origin feature/AmazingFeature`).
-6.  Open a Pull Request.
-
-When creating Issues or Pull Requests, please use the provided templates to ensure all necessary information is included.
+Public headers, C and ASM boundary comments, tests, benchmark adapters, JSON manifests, and this README are reviewed against `QUALITY_GATES_DOCUMENTATION_C11_JSON.md`. Commands in this document are intended to be copyable without manual correction.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+See the repository license file.
